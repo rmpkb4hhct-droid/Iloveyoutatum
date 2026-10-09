@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Slideshow</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #08090c;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .slideshow {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: #08090c;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
+      pointer-events: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    /* Subtle cinematic background */
+    .slideshow::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.48),
+        transparent 25%
+      );
+      pointer-events: none;
+    }
+
+    .controls {
+      position: absolute;
+      z-index: 2;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 10px 16px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 40px;
+      background: rgba(20,20,24,0.65);
+      backdrop-filter: blur(14px);
+    }
+
+    button {
+      border: 0;
+      background: transparent;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 5px 10px;
+    }
+
+    button:hover {
+      color: #b8c9ff;
+    }
+
+    #counter {
+      font-size: 13px;
+      min-width: 55px;
+      text-align: center;
+      color: #ddd;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      position: absolute;
+      z-index: 2;
+      top: 22px;
+      right: 24px;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide {
+        transition-duration: 0.01ms;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="slideshow" id="slideshow">
+    <div class="hint">← → Navigate · Space Play/Pause</div>
+
+    <div class="controls">
+      <button id="prev" aria-label="Previous image">‹</button>
+      <span id="counter">1 / 3</span>
+      <button id="play" aria-label="Pause slideshow">Ⅱ</button>
+      <button id="next" aria-label="Next image">›</button>
+    </div>
+  </main>
+
+  <script>
+    // Add or remove image paths here.
+    const images = [
+      "images/photo1.jpg",
+      "images/photo2.jpg",
+      "images/photo3.jpg"
+    ];
+
+    const slideshow = document.getElementById("slideshow");
+    const counter = document.getElementById("counter");
+    const playButton = document.getElementById("play");
+
+    let current = 0;
+    let playing = true;
+    let timer;
+    const interval = 5000; // 5 seconds per image
+
+    const slides = images.map((src, index) => {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = `Slideshow image ${index + 1}`;
+      img.className = "slide";
+      img.draggable = false;
+
+      if (index === 0) img.classList.add("active");
+
+      slideshow.prepend(img);
+      return img;
+    });
+
+    function showSlide(index) {
+      current = (index + slides.length) % slides.length;
+
+      slides.forEach((slide, i) => {
+        slide.classList.toggle("active", i === current);
+      });
+
+      counter.textContent = `${current + 1} / ${slides.length}`;
+    }
+
+    function nextSlide() {
+      showSlide(current + 1);
+    }
+
+    function prevSlide() {
+      showSlide(current - 1);
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      timer = setInterval(nextSlide, interval);
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      playButton.textContent = playing ? "Ⅱ" : "▶";
+      playButton.setAttribute(
+        "aria-label",
+        playing ? "Pause slideshow" : "Play slideshow"
+      );
+
+      if (playing) {
+        startTimer();
+      } else {
+        clearInterval(timer);
+      }
+    }
+
+    document.getElementById("next").onclick = () => {
+      nextSlide();
+      if (playing) startTimer();
+    };
+
+    document.getElementById("prev").onclick = () => {
+      prevSlide();
+      if (playing) startTimer();
+    };
+
+    playButton.onclick = togglePlay;
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "ArrowRight") {
+        nextSlide();
+        if (playing) startTimer();
+      }
+
+      if (event.key === "ArrowLeft") {
+        prevSlide();
+        if (playing) startTimer();
+      }
+
+      if (event.code === "Space" &&
+          !["INPUT", "TEXTAREA"].includes(
+            document.activeElement.tagName
+          )) {
+        event.preventDefault();
+        togglePlay();
+      }
+    });
+
+    // Avoid a broken counter if no images were added.
+    if (slides.length === 0) {
+      counter.textContent = "No images";
+      playButton.disabled = true;
+    } else {
+      showSlide(0);
+      startTimer();
+    }
+  </script>
+</body>
+</html>
